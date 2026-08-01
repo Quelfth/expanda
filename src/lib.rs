@@ -80,6 +80,19 @@
 //! `body` refers to the body of the loop, which will be repeated for each element
 //! of `token_expressions` accessible as the `loop_variable_name` metavariable.
 //! 
+//! #### Repeat Directive
+//! The [`repeat`](crate#repeat-directive) directive looks like
+//! ```
+//! <--repeat count {
+//!     body
+//! }
+//! ```
+//! 
+//! `count` must be either an integer literal, or an [interpolation](crate#interpolation)
+//! which resolves to a single integer literal.
+//! 
+//! `body` refers to the body of the loop, which will be repeated `count` times.
+//! 
 //! #### Let directive
 //! The [`let`](crate#let-directive) directive looks like
 //! ```
@@ -134,7 +147,7 @@
 //! - `$name`: This will be substituted for the `name` metavariable.
 //! - `${ some_meta_expression }`: This evaluates a [meta expression](crate#meta-expressions).
 //! - `$*list_name`: This will be substituted for a metalist.  This is allowed
-//!     only as part of the right hand side of a [`for`](crate#for-directive) directive.
+//!   only as part of the right hand side of a [`for`](crate#for-directive) directive.
 //! - `$$`: This produces the interpolation sigil itself as a token.
 //!
 //! All `expand` invocations automatically start with one defined metavariable
@@ -150,7 +163,7 @@
 //! - `name`: This will resolve to the metavariable `name`
 //! - `[tokens]`: This resolves to the literal `tokens`
 //! - `"name"`: This takes the value of the metavariable `name` and then stringifies it.
-//!     You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
+//!   You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
 //! 
 //! If multiple units are present within `{ }`, they will be concatenated to form a single token.
 //! If this concatenation is impossible for any reason, it will produce a compiler error.

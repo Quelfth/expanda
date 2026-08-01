@@ -1,4 +1,4 @@
-The [`expand`] macro replaces the common `macro_rules!` use
+The `expand` macro replaces the common `macro_rules!` use
 case where you define a macro and then immediately invoke it
 one time and never again.
 
@@ -26,7 +26,7 @@ impl_int_add!{
     i8 i16 i32 i64 i128 isize
 }
 ```
-Using [`expand`] this could become just
+Using `expand` this could become just
 ```
 expand! {
     <--for $T in
@@ -44,12 +44,12 @@ expand! {
 This is arguably not that much less code, but the `$( )*` can be hard to read,
 and we have to come up with a name for this macro.  Also, in cases where you need
 a cartesian product (two for loops), you would need two macros one emitting the other
-to do it with `macro_rules!`.  I would argue that the [`expand`] version is a lot more
+to do it with `macro_rules!`.  I would argue that the `expand` version is a lot more
 straightforward and readable.
 
 ### Syntax
 
-Most tokens inside [`expand`] are interpreted literally.
+Most tokens inside `expand` are interpreted literally.
 
 There are two exceptions:
 - [Directives](crate#directives), which begin with `<--`.
@@ -79,6 +79,19 @@ which will resolve to the result of the [interpolation](crate#interpolation).
 
 `body` refers to the body of the loop, which will be repeated for each element
 of `token_expressions` accessible as the `loop_variable_name` metavariable.
+
+#### Repeat Directive
+The [`repeat`](crate#repeat-directive) directive looks like
+```
+<--repeat count {
+    body
+}
+```
+
+`count` must be either an integer literal, or an [interpolation](crate#interpolation)
+which resolves to a single integer literal.
+
+`body` refers to the body of the loop, which will be repeated `count` times.
 
 #### Let directive
 The [`let`](crate#let-directive) directive looks like
@@ -140,7 +153,7 @@ An interpolation sequence beginning with `$` can have one of four forms:
 All `expand` invocations automatically start with one defined metavariable
 named `dollar_sign` which evaluates to `$`.  This is not the [interpolation sigil](crate#use-directive),
 but rather always a `$` character.  This is useful since it allows you to use
-[`expand`] to create a `macro_rules!` as the output of another `macro_rules!`.
+`expand` to create a `macro_rules!` as the output of another `macro_rules!`.
 Doing this also requires a [`<--use #`](crate#use-directive) or similar directive.
 
 ### Meta Expressions
