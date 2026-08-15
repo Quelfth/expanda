@@ -212,7 +212,7 @@
 #[macro_export]
 macro_rules! expand {
     (<--use $var:ident $($rest:tt)*) => {
-        $crate::__expand_using! {($) $var $($rest:tt)*}
+        $crate::__expand_using! {($) $var $($rest)*}
     };
     ($($tt:tt)*) => {
         $crate::expand_inner! { $($tt)* }
