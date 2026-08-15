@@ -209,7 +209,32 @@
 
 /// The purpose of the crate.
 /// See [crate-level documentation](crate).
-pub use expanda_macros::expand;
+#[macro_export]
+macro_rules! expand {
+    (<--use $var:ident $($rest:tt)*) => {
+        $crate::__expand_using! {($) $var $($rest:tt)*}
+    };
+    ($($tt:tt)*) => {
+        $crate::expand_inner! { $($tt)* }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __expand_using {
+    (($S:tt) $var:ident $($rest:tt)*) => {
+        $var! {
+            ( )
+            > [<--let $S$var =]
+            < [$($rest)*]
+            { }
+            > [$crate::expand!]
+        }
+    };
+}
+
+#[doc(hidden)]
+pub use expanda_macros::expand as expand_inner;
 
 /// This is a version of [`expand`] which can be used to generate just some
 /// attributes on an item, since a normal function-style macro isn't capable

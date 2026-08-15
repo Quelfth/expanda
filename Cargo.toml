@@ -1,6 +1,6 @@
 [package]
 name = "expanda"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 
 description = "`expand` macro to replace and simplify single-use `macro_rules!`"
