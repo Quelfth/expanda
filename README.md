@@ -52,19 +52,19 @@ straightforward and readable.
 Most tokens inside `expand` are interpreted literally.
 
 There are two exceptions:
-- [Directives](crate#directives), which begin with `<--`.
-- [Interpolations](crate#interpolation), which begin with the [interpolation sigil](crate#use-directive), `$` by default.
+- Directives, which begin with `<--`.
+- Interpolations, which begin with the interpolation sigil, `$` by default.
 
 ### Directives
 
 #### For Directive
-The [`for`](crate#for-directive) directive looks like
+The `for` directive looks like
 ```
 <--for $loop_variable_name in token_expressions {
     body
 }
 ```
-This `$` is actually the [interpolation sigil](crate#use-directive). (whatever it may be)
+This `$` is actually the interpolation sigil. (whatever it may be)
 
 `loop_variable_name` can be any identifier, and defines the metavariable
 for the loop.
@@ -75,52 +75,83 @@ non-group token (anything except `( )` `[ ]` or `{ }`), or `[tokens]` where
 `tokens` is any sequence of tokens.  In the case of `[tokens]`, the `[ ]`
 will not appear in the output. (but all contents, including any additional
 `[ ]`, will appear).  A token expression may also be an interpolation (`$name`),
-which will resolve to the result of the [interpolation](crate#interpolation).
+which will resolve to the result of the [interpolation].
 
 `body` refers to the body of the loop, which will be repeated for each element
 of `token_expressions` accessible as the `loop_variable_name` metavariable.
 
 #### Repeat Directive
-The [`repeat`](crate#repeat-directive) directive looks like
+The `repeat` directive looks like
 ```
 <--repeat count {
     body
 }
 ```
 
-`count` must be either an integer literal, or an [interpolation](crate#interpolation)
+`count` must be either an integer literal, or an interpolation
 which resolves to a single integer literal.
 
 `body` refers to the body of the loop, which will be repeated `count` times.
 
 #### Let directive
-The [`let`](crate#let-directive) directive looks like
+The `let` directive looks like
 ```
 <--let $variable_name = value
 ```
-A [`let`](crate#let-directive) directive simply binds a particular metavalue to a metavariable
-for use in future [interpolations](crate#interpolation).
+A `let` directive simply binds a particular metavalue to a metavariable
+for use in future interpolations.
 
-The `$` is actually the [interpolation sigil](crate#use-directive). (whatever it may be)
+The `$` is actually the interpolation sigil. (whatever it may be)
 
-[`let`](crate#let-directive) directives are allowed to redefine existing metavariables.  Any
+`let` directives are allowed to redefine existing metavariables.  Any
 `( )`, `[ ]` or `{ }` will introduce a new scope for these bindings.
 So any bindings created in a scope will last only for that scope.
 
 `variable_name` is the name of the metavariable to assign.
 
 `value` is the value to assign to the binding, it follows the same
-rules as the `token_expressions` in a [`for`](crate#for-directive) directive, except that there can be only one.
+rules as the `token_expressions` in a `for` directive, except that there can be only one.
 
-A `*` can be placed before the variable name (`$*name`) to define a metalist
-instead of a metavariable.  Metalists have a separate namespace from metavariables.
-When defining a metalist, the `value` should be in `( )`, and can be any number of values.
-Unlike regular metavariables, metalists can only be expanded as the right hand argument
-to a [`for`](crate#for-directive) directive.  In this situation, all of their values will be looped over by the
-[`for`](crate#for-directive).
+#### Match Directive
+The `match` directive looks like
+```
+<--match value {
+    (pattern 1) => {result 1}
+    (pattern 2) => {result 2}
+    ...
+}
+```
+A `match` directive allows you to compare a particular metavalue against
+several patterns, and emit a specific token stream corresponding to the first pattern that matches.
+
+The syntax for these patterns is as such:
+- Any single token other than `$` (or whatever the interpolation sigil happens to be) will check 
+  that the token from the input matches it exactly.
+- When matching `( )`, `[ ]`, and `{ }`, the interior of the delimiters is another pattern that will be checked against
+  their corresponding contents in the input.  This is almost certainly just "what you would expect to happen".
+- A capture begins with `$` and then is followed by three optional components and one required component:
+  - The first optional component is the capture name, which must be an identifier.
+  - The second optional component is the quantifier, this can be a braced range like `{1..10}`, or one or the other
+    bound can be omitted as in `{1..}` or `{..10}`, or it can be a single braced number like `{3}`.  Additionally,
+    the quantifier can be `?`, `+`, or `*`, which are equivalent to `{0..1}`, `{1..}`, and `{0..}` respectively.
+    The quantifier represents the number of repetitions allowed for this capture.
+  - The third optional component is a negation like `^( )` or `^[ ]`.  This component prevents the capture from matching
+    if the pattern inside the `( )` or `[ ]` does match.  In the case of `[ ]`, the tokens inside are each treated individually,
+    and the pattern will fail to match if any of those match the stream.
+  - The final component, the only required one, must be either `( )`, `[ ]`, or `.`.
+    - For `( )`, all of the tokens inside must match the input in sequence.
+    - For `[ ]`, any single token inside must match the input.
+    - For `.`, this capture will match any single token from the input.
+
+It is an error for the `match` to fail to match any of its arms.  If you would like to instead
+simply produce nothing, you can achieve this by adding a fallback branch that matches anything, which would look like
+```
+($*.) => {}
+```
+The pattern `$*.` will match a sequence of zero or more of any token.  That is, it matches any input.
 
 #### Use directive
-[`use`](crate#use-directive) directives allow you to change the interpolation sigil.
+`use` directives allow you to change the interpolation sigil.
 ```
 <--use #
 ```
@@ -137,7 +168,7 @@ character such as `+` would be ill-advised.  Good options include
 - `@` This is only used in pattern bindings (`let x @ some_pattern = ...`)
 
 ### Interpolation
-Interpolation is invoked by the [interpolation sigil](crate#use-directive), `$` by default.
+Interpolation is invoked by the interpolation sigil, `$` by default.
 
 This documentation will assume that the interpolation sigil is `$`,
 note that all instances of `$` refer to whatever the interpolation sigil
@@ -145,25 +176,33 @@ happens to be.
 
 An interpolation sequence beginning with `$` can have one of four forms:
 - `$name`: This will be substituted for the `name` metavariable.
-- `${ some_meta_expression }`: This evaluates a [meta expression](crate#meta-expressions).
-- `$*list_name`: This will be substituted for a metalist.  This is allowed
-    only as part of the right hand side of a [`for`](crate#for-directive) directive.
+- `${ some_meta_expression }`: This evaluates a meta expression.
 - `$$`: This produces the interpolation sigil itself as a token.
 
 All `expand` invocations automatically start with one defined metavariable
-named `dollar_sign` which evaluates to `$`.  This is not the [interpolation sigil](crate#use-directive),
+named `dollar_sign` which evaluates to `$`.  This is not the interpolation sigil,
 but rather always a `$` character.  This is useful since it allows you to use
 `expand` to create a `macro_rules!` as the output of another `macro_rules!`.
-Doing this also requires a [`<--use #`](crate#use-directive) or similar directive.
+Doing this also requires a `<--use #` or similar directive.
 
 ### Meta Expressions
 A meta expression consists of a sequence of units which will be concatenated
 together to form a single token.
 These are the types of unit:
 - `name`: This will resolve to the metavariable `name`
-- `[tokens]`: This resolves to the literal `tokens`
+- `(tokens)`: This resolves to the literal `tokens`
+- `{tokens}`: This evaluates `{tokens}` as an inner meta expression and resolves to the result.
 - `"name"`: This takes the value of the metavariable `name` and then stringifies it.
-    You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
+  You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
 
 If multiple units are present within `{ }`, they will be concatenated to form a single token.
 If this concatenation is impossible for any reason, it will produce a compiler error.
+
+Additionally, each unit can be suffixed with `.operation_name` to perform operations on them.
+The available operations are:
+- `stringify`: Convert a token into a string.  `${variable.stringify}` produces the same results as `${"variable"}`.
+- `snake_case`: Convert an identifier to `snake_case`.
+- `upper_camel_case`: Convert an identifier to `UpperCamelCase`.
+- `screaming_snake_case`: Convert an identifier to `SCREAMING_SNAKE_CASE`.
+- `camel_case`: Convert an identifier to `camelCase`. This casing is never used in standard rust style.
+- `upper_snake_case`: Convert an identifier to `Upper_Snake_Case`. This casing is never used in standard rust style.

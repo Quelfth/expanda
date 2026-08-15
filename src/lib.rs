@@ -112,12 +112,43 @@
 //! `value` is the value to assign to the binding, it follows the same
 //! rules as the `token_expressions` in a [`for`](crate#for-directive) directive, except that there can be only one.
 //! 
-//! A `*` can be placed before the variable name (`$*name`) to define a metalist
-//! instead of a metavariable.  Metalists have a separate namespace from metavariables.
-//! When defining a metalist, the `value` should be in `( )`, and can be any number of values.
-//! Unlike regular metavariables, metalists can only be expanded as the right hand argument
-//! to a [`for`](crate#for-directive) directive.  In this situation, all of their values will be looped over by the
-//! [`for`](crate#for-directive).
+//! #### Match Directive
+//! The [`match`](crate#match-directive) directive looks like
+//! ```
+//! <--match value {
+//!     (pattern 1) => {result 1}
+//!     (pattern 2) => {result 2}
+//!     ...
+//! }
+//! ```
+//! A [`match`](crate#match-directive) directive allows you to compare a particular metavalue against
+//! several patterns, and emit a specific token stream corresponding to the first pattern that matches.
+//! 
+//! The syntax for these patterns is as such:
+//! - Any single token other than `$` (or whatever the [interpolation sigil](crate#use-directive) happens to be) will check 
+//!   that the token from the input matches it exactly.
+//! - When matching `( )`, `[ ]`, and `{ }`, the interior of the delimiters is another pattern that will be checked against
+//!   their corresponding contents in the input.  This is almost certainly just "what you would expect to happen".
+//! - A capture begins with `$` and then is followed by three optional components and one required component:
+//!   - The first optional component is the capture name, which must be an identifier.
+//!   - The second optional component is the quantifier, this can be a braced range like `{1..10}`, or one or the other
+//!     bound can be omitted as in `{1..}` or `{..10}`, or it can be a single braced number like `{3}`.  Additionally,
+//!     the quantifier can be `?`, `+`, or `*`, which are equivalent to `{0..1}`, `{1..}`, and `{0..}` respectively.
+//!     The quantifier represents the number of repetitions allowed for this capture.
+//!   - The third optional component is a negation like `^( )` or `^[ ]`.  This component prevents the capture from matching
+//!     if the pattern inside the `( )` or `[ ]` does match.  In the case of `[ ]`, the tokens inside are each treated individually,
+//!     and the pattern will fail to match if any of those match the stream.
+//!   - The final component, the only required one, must be either `( )`, `[ ]`, or `.`.
+//!     - For `( )`, all of the tokens inside must match the input in sequence.
+//!     - For `[ ]`, any single token inside must match the input.
+//!     - For `.`, this capture will match any single token from the input.
+//! 
+//! It is an error for the [`match`](crate#match-directive) to fail to match any of its arms.  If you would like to instead
+//! simply produce nothing, you can achieve this by adding a fallback branch that matches anything, which would look like
+//! ```
+//! ($*.) => {}
+//! ```
+//! The pattern `$*.` will match a sequence of zero or more of any token.  That is, it matches any input.
 //! 
 //! #### Use directive
 //! [`use`](crate#use-directive) directives allow you to change the interpolation sigil.
@@ -146,8 +177,6 @@
 //! An interpolation sequence beginning with `$` can have one of four forms:
 //! - `$name`: This will be substituted for the `name` metavariable.
 //! - `${ some_meta_expression }`: This evaluates a [meta expression](crate#meta-expressions).
-//! - `$*list_name`: This will be substituted for a metalist.  This is allowed
-//!   only as part of the right hand side of a [`for`](crate#for-directive) directive.
 //! - `$$`: This produces the interpolation sigil itself as a token.
 //!
 //! All `expand` invocations automatically start with one defined metavariable
@@ -161,17 +190,31 @@
 //! together to form a single token.
 //! These are the types of unit:
 //! - `name`: This will resolve to the metavariable `name`
-//! - `[tokens]`: This resolves to the literal `tokens`
+//! - `(tokens)`: This resolves to the literal `tokens`
+//! - `{tokens}`: This evaluates `{tokens}` as an inner meta expression and resolves to the result.
 //! - `"name"`: This takes the value of the metavariable `name` and then stringifies it.
 //!   You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
 //! 
 //! If multiple units are present within `{ }`, they will be concatenated to form a single token.
 //! If this concatenation is impossible for any reason, it will produce a compiler error.
-
+//! 
+//! Additionally, each unit can be suffixed with `.operation_name` to perform operations on them.
+//! The available operations are:
+//! - `stringify`: Convert a token into a string.  `${variable.stringify}` produces the same results as `${"variable"}`.
+//! - `snake_case`: Convert an identifier to `snake_case`.
+//! - `upper_camel_case`: Convert an identifier to `UpperCamelCase`.
+//! - `screaming_snake_case`: Convert an identifier to `SCREAMING_SNAKE_CASE`.
+//! - `camel_case`: Convert an identifier to `camelCase`. This casing is never used in standard rust style.
+//! - `upper_snake_case`: Convert an identifier to `Upper_Snake_Case`. This casing is never used in standard rust style.
 
 /// The purpose of the crate.
 /// See [crate-level documentation](crate).
 pub use expanda_macros::expand;
+
+/// This is a version of [`expand`] which can be used to generate just some
+/// attributes on an item, since a normal function-style macro isn't capable
+/// of this.
+pub use expanda_macros::expand_attr;
 
 /// This allows you to use a token sequence or token sequence list
 /// declared by [`declare`] in an [`expand`] invocation.
@@ -188,22 +231,24 @@ pub use expanda_macros::expand;
 /// interpret it as a list and declare it as a metalist instead.
 pub use expanda_macros::using;
 
-/// This is a function-style version of the [`using`] attribute.
+/// This is an attribute macro version of the [`declare`] macro.
+/// It will simply declare the entire item it is placed on under
+/// the name passed as its argument.
+/// 
+/// Example:
 /// ```
-/// using_fn! { (foo) {
-///     expand! { ... }
-/// }}
-/// ```
-/// is equivalent to
-/// ```
-/// #[using(foo)]
-/// expand! {
-///     ...
+/// #[declare_item(foo)]
+/// enum Foo {
+///    A(A),
+///    B(B),
+///    C(C),
 /// }
 /// ```
-/// This is provided for debugging purposes, since rust-analyzer can't
-/// inline attribute macros. (but it can inline function macros).
-pub use expanda_macros::using_fn;
+/// Note! This macro evaluates to code that depends on the `expanda` crate
+/// being accessible through the path `::expanda`.  It will break if the crate
+/// is used under a different name.  This is a current limitation of attribute
+/// macros.
+pub use expanda_macros::declare_item;
 
 /// Invocations of this macro are emitted by macros generated by
 /// [`declare`].  It allows for recursive construction
@@ -267,10 +312,7 @@ macro_rules! fold {
 #[macro_export]
 macro_rules! declare {
     ($($tokens:tt)*) => {
-        $crate::expand!{
-            <--use #
-            $crate::__declare!{#dollar_sign $($tokens)*}
-        }
+        $crate::__declare!{($) $($tokens)*}
     }
 }
 
@@ -280,7 +322,7 @@ macro_rules! declare {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __declare {
-    ($dollar:tt $(
+    (($dollar:tt) $(
         $(#[$($attr:tt)*])*
         $v:vis $name:ident = ($($value:tt)*)
     )*

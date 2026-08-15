@@ -1,7 +1,8 @@
 
 - expand_using! {}
-- #[expand_attr()]
-- #[derive(declare)]
 
-- <--match
-- for $foo in 0..10
+- <--for $foo in 0..10
+- <--for $a $b in $A $B
+- <--if
+
+- patterns use $. instead of $_
