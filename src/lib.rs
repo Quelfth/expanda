@@ -227,8 +227,7 @@ pub use expanda_macros::expand_attr;
 /// }
 /// ```
 /// Doing it like this will interpret `foo` as a token sequence and declare it
-/// as a metavariable within the [`expand`].  You can write `#[using(*foo)]` to 
-/// interpret it as a list and declare it as a metalist instead.
+/// as a metavariable within the [`expand`].
 pub use expanda_macros::using;
 
 /// This is an attribute macro version of the [`declare`] macro.
