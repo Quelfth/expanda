@@ -4,13 +4,11 @@ version = 4
 
 [[package]]
 name = "expanda"
-version = "0.3.3"
+version = "0.4.0"
 dependencies = [
  "expanda-macros",
 ]
 
 [[package]]
 name = "expanda-macros"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e26f2212ba694dcb57d58ce7ed4f074e9fbb23718b0768985b0d5faa56f048ff"
+version = "0.4.0"

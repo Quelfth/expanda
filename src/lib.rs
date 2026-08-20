@@ -151,7 +151,12 @@
 //! The pattern `$*.` will match a sequence of zero or more of any token.  That is, it matches any input.
 //! 
 //! #### Use directive
-//! [`use`](crate#use-directive) directives allow you to change the interpolation sigil.
+//! [`use`](crate#use-directive) directives do two different things.
+//!  - If `<--use` is followed by a punctuation or operator such as `#`, this
+//!    will change the interopolation sigil.
+//!  - If `<--use` is followed by an identifier, this will allow the use of
+//!    token sequences declared by [`declare`] in an [`expand`].  This is allowed only
+//!    at the very start of `expand!{ }`.
 //! ```
 //! <--use #
 //! ```
@@ -166,6 +171,17 @@
 //! - `~` Rust doesn't use this character at all, but it is a valid token.
 //! - `#` This is only used in attributes. (`#[ ]`)
 //! - `@` This is only used in pattern bindings (`let x @ some_pattern = ...`)
+//! 
+//! ```
+//! <--use foo
+//! ```
+//! on the other hand, will assume that `foo` has been previously declared by a
+//! ```
+//! declare! {
+//!     foo = (some tokens)
+//! }
+//! ```
+//! and it will assign `(some tokens)` to a metavariable called `foo`.
 //! 
 //! ### Interpolation
 //! Interpolation is invoked by the [interpolation sigil](crate#use-directive), `$` by default.
@@ -240,20 +256,6 @@ pub use expanda_macros::expand as expand_inner;
 /// attributes on an item, since a normal function-style macro isn't capable
 /// of this.
 pub use expanda_macros::expand_attr;
-
-/// This allows you to use a token sequence or token sequence list
-/// declared by [`declare`] in an [`expand`] invocation.
-/// 
-/// Do so via
-/// ```
-/// #[using(foo)]
-/// expand! {
-///     ...
-/// }
-/// ```
-/// Doing it like this will interpret `foo` as a token sequence and declare it
-/// as a metavariable within the [`expand`].
-pub use expanda_macros::using;
 
 /// This is an attribute macro version of the [`declare`] macro.
 /// It will simply declare the entire item it is placed on under
