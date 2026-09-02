@@ -1,6 +1,6 @@
 [package]
 name = "expanda"
-version = "0.4.5"
+version = "0.5.0"
 edition = "2024"
 
 description = "`expand` macro to replace and simplify single-use `macro_rules!`"
@@ -8,4 +8,4 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Quelfth/expanda"
 
 [dependencies]
-expanda-macros = {version = "0.4.5", path = "../expanda-macros"}
+expanda-macros = {version = "0.5.0", path = "../expanda-macros"}

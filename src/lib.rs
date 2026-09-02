@@ -208,20 +208,21 @@
 //! - `name`: This will resolve to the metavariable `name`
 //! - `(tokens)`: This resolves to the literal `tokens`
 //! - `{tokens}`: This evaluates `{tokens}` as an inner meta expression and resolves to the result.
-//! - `"name"`: This takes the value of the metavariable `name` and then stringifies it.
-//!   You can use the string prefixes `b""` and `c""` to stringify into different kinds of string literals.
+//! - `"name"` or `12345`: All literals are interpreted literally.
 //! 
 //! If multiple units are present within `{ }`, they will be concatenated to form a single token.
 //! If this concatenation is impossible for any reason, it will produce a compiler error.
 //! 
 //! Additionally, each unit can be suffixed with `.operation_name` to perform operations on them.
 //! The available operations are:
-//! - `stringify`: Convert a token into a string.  `${variable.stringify}` produces the same results as `${"variable"}`.
+//! - `stringify`: Convert a token into a string.
 //! - `snake_case`: Convert an identifier to `snake_case`.
 //! - `upper_camel_case`: Convert an identifier to `UpperCamelCase`.
 //! - `screaming_snake_case`: Convert an identifier to `SCREAMING_SNAKE_CASE`.
 //! - `camel_case`: Convert an identifier to `camelCase`. This casing is never used in standard rust style.
 //! - `upper_snake_case`: Convert an identifier to `Upper_Snake_Case`. This casing is never used in standard rust style.
+//! - `to_dashes`: Convert all `_` in a string literal into `-`.
+//! - `len`: Count the number of subvalues in the metavariable, and emit it as an integer literal.
 
 /// The purpose of the crate.
 /// See [crate-level documentation](crate).
